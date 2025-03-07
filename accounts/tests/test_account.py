@@ -73,3 +73,14 @@ class AccountTests(APITestCase):
         self.parallel_account.refresh_from_db()
         self.assertLessEqual(self.parallel_account.current_balance, 10000)
         self.assertGreaterEqual(self.parallel_account.current_balance, 0)
+
+
+
+
+
+
+
+
+
+
+

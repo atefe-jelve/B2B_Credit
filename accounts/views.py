@@ -21,14 +21,21 @@ class AccountViewSet(ViewSet):
         serializer.is_valid(raise_exception=True)
 
         # this line , avoids 'race conditions' if multiple requests hit the same account at the same time
-        account = Account.objects.select_for_update().get(id=serializer.validated_data['account_id'])
+        # account = Account.objects.select_for_update().get(id=serializer.validated_data['account_id'])
+
+        try:
+            account = Account.objects.select_for_update().get(id=serializer.validated_data['account_id'])
+        except Account.DoesNotExist:
+            return Response({'error': 'Account not found'}, status=404)
+
 
         # log this recharge
         CreditTransaction.objects.create(
             account=account,
             amount=serializer.validated_data['amount'],
             transaction_type=CreditTransaction.RECHARGE,
-            reference_number=serializer.validated_data['reference_number']
+            reference_number=serializer.validated_data['reference_number'],
+            phone_number = serializer.validated_data['phone_number']
         )
 
         # Updates the account balance
@@ -52,7 +59,9 @@ class AccountViewSet(ViewSet):
             account=account,
             amount=-serializer.validated_data['amount'],
             transaction_type=CreditTransaction.SALE,
-            reference_number=serializer.validated_data['reference_number']
+            reference_number=serializer.validated_data['reference_number'],
+            phone_number=serializer.validated_data['phone_number']
+
         )
         account.current_balance -= serializer.validated_data['amount']
         account.save()
@@ -64,3 +73,8 @@ class AccountViewSet(ViewSet):
         queryset = CreditTransaction.objects.all()
         serializer = TransactionSerializer(queryset, many=True)
         return Response(serializer.data)
+
+
+
+
+
