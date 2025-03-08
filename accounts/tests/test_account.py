@@ -1,17 +1,28 @@
-
-from rest_framework.test import APITestCase
-from accounts.models import Account
+from django.db import connections
+from django.test import TransactionTestCase
+from rest_framework.test import APIClient
 from concurrent.futures import ThreadPoolExecutor
+from django.contrib.auth.models import User
+from accounts.models import Account
 
-class AccountTests(APITestCase):
+class AccountTests(TransactionTestCase):
 
     def setUp(self):
-        #  build sellers for test
+        self.user = User.objects.create_user(username="usertest", password="123")
+
+        # Build sellers for test
         self.seller1 = Account.objects.create(reseller_name='Seller 1', current_balance=0)
         self.seller2 = Account.objects.create(reseller_name='Seller 2', current_balance=0)
 
-        #  build seller for parallel test
+        # Build seller for parallel test
         self.parallel_account = Account.objects.create(reseller_name='Parallel Seller', current_balance=10000)
+
+    @classmethod
+    def tearDownClass(cls):
+        # Close all database connections
+        for conn in connections.all():
+            conn.close()
+        super().tearDownClass()
 
     #### -------------------- Simple Case Test --------------------
 
@@ -48,13 +59,14 @@ class AccountTests(APITestCase):
         self.assertEqual(self.seller1.current_balance, 9000)
         self.assertEqual(self.seller2.current_balance, 10000)
 
-    #### -------------------- Parallel Load Test --------------------
+    ### -------------------- Parallel Load Test --------------------
 
     def parallel_sale_request(self, reference_number):
-        response = self.client.post('/api/accounts/sale/', {
+        client = APIClient()
+        response = client.post('/api/accounts/sale/', {
             'account_id': self.parallel_account.id,
             'amount': 500,
-            'reference_number': reference_number
+            'reference_number': reference_number,
         })
 
         # If the balance is low, you may give 400, here we accept 200 or 400
@@ -66,6 +78,7 @@ class AccountTests(APITestCase):
                 executor.submit(self.parallel_sale_request, f"SALE_{i}")
                 for i in range(20)
             ]
+
             for future in futures:
                 future.result()
 
@@ -73,14 +86,3 @@ class AccountTests(APITestCase):
         self.parallel_account.refresh_from_db()
         self.assertLessEqual(self.parallel_account.current_balance, 10000)
         self.assertGreaterEqual(self.parallel_account.current_balance, 0)
-
-
-
-
-
-
-
-
-
-
-

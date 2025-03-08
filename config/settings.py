@@ -29,7 +29,8 @@ INSTALLED_APPS = [
 
     'accounts',
 
-    'rest_framework'
+    'rest_framework',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -74,6 +75,10 @@ DATABASES = {
         'PASSWORD': '***',
         'HOST': '127.0.0.1',
         'PORT': '5432',
+        # 'TEST': {
+        #     'NAME': 'test_seller_management_db',  # Separate test DB
+        # },
+        'CONN_MAX_AGE': 0,
     }
 }
 
@@ -120,3 +125,12 @@ STATIC_ROOT = BASE_DIR / 'static'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+
+}
+
+DJANGO_SETTINGS_MODULE = "config.settings python manage.py test --keepdb"

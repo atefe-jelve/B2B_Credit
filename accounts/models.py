@@ -6,6 +6,10 @@ class Account(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def calculate_balance(self):
+        total = self.transactions.aggregate(total=models.Sum('amount'))['total'] or 0
+        return total
+
 
 class CreditTransaction(models.Model):
     RECHARGE = 'RECHARGE'
